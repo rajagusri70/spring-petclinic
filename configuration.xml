@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	
+	<build>
+		<buildEngine>mvn</buildEngine>
+		<hostServer></hostServer>
+	</build>
+	
+	<sonarQube>
+		<projectKey>spring-petclinic</projectKey>
+		<hostServer>http://10.243.211.39:9000/</hostServer>
+		<username>admin</username>
+		<password>P@ssw0rd2019!</password>
+		<token>79aeac61f1d51021df09fb7b57b5ba47958c1145</token>
+	</sonarQube>
+
+	<jfrog>
+		<repositoryName>jfrog-test</repositoryName> 
+		<hostServer>http://10.243.213.85:8081/artifactory</hostServer>
+		<username>admin</username>
+		<password>P@ssw0rd</password>
+	</jfrog>
+	
+	<deployment>
+		<environment>VM</environment>
+		<hostServerDev>http://10.243.211.39:8080/</hostServerDev>
+		<hostServerUAT_Staging>http://10.243.133.198:8080/</hostServerUAT_Staging>
+		<hostServerProd>http://10.243.133.197:8080/</hostServerProd>
+	</deployment>
+	
+</configuration>

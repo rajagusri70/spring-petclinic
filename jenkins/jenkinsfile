@@ -1,0 +1,159 @@
+def gitUrl = 'http://182.169.41.105:7990/scm/tes/petclinic.git'
+def branch = 'master'
+
+
+def appPomVersion
+def appName
+def imageTag
+def artifactName
+
+def nexusVersion = 'nexus3'
+def nexusProtocol = 'http'
+def nexusUrl = '182.169.41.111:8081'
+def nexusAppRepo = 'maven-repository'
+def nexusCredential = 'devops'
+
+pipeline {
+
+	agent { 
+	    label 'master'
+	}
+	
+    stages{
+        stage("Preparation"){
+            steps {
+                script {
+                    checkout scm: [$class: 'GitSCM', userRemoteConfigs: [[credentialsId: 'devops', url: "${gitUrl}"]], branches: [[name: "${branch}"]]]
+                    
+                    //get version
+                    //appPomVersion = getFromPom('version') 
+                    appPomVersion = '2.3.1'
+                    echo "App version : ${appPomVersion}"
+
+                    //get app name
+                    //appName = getFromPom('artifactId')
+                    appName = 'spring-petclinic'
+                    //echo "App name : '${appName}'"
+
+                    //artifact name
+                    //artifactName= "${appName}-${appPomVersion}"
+                    echo "artifact name : $artifactName"
+                }
+            }
+        }
+		
+		stage("Build"){
+            steps {
+                script {
+                    echo "Hello world!"
+                    sh """
+					export PATH=/opt/maven/bin:${PATH}
+					mvn clean install
+					"""
+                }
+            }
+        }
+		
+		stage("Unit Test"){
+            steps {
+                script {
+                    sh """
+					export PATH=/opt/maven/bin:${PATH}
+					mvn test
+					"""
+                }
+            }
+        }
+        
+        stage("SonarQube Analysis"){
+            steps {
+                script {
+                    echo "Hello world!"
+                    
+                }
+            }
+        }
+		
+		stage("Push Artifact"){
+            steps {
+                script {
+                    echo "Hello world!"
+                    pom = readMavenPom file: "pom.xml";
+                    // Find built artifact under target folder
+                    filesByGlob = findFiles(glob: "target/*.${pom.packaging}");
+                    // Print some info from the artifact found
+                    echo "${filesByGlob[0].name} ${filesByGlob[0].path} ${filesByGlob[0].directory} ${filesByGlob[0].length} ${filesByGlob[0].lastModified}"
+                    // Extract the path from the File found
+                    artifactPath = filesByGlob[0].path;
+                    // Assign to a boolean response verifying If the artifact name exists
+                    artifactExists = fileExists artifactPath;
+                    if(artifactExists) {
+                        echo "*** File: ${artifactPath}, group: ${pom.groupId}, packaging: ${pom.packaging}, version ${pom.version}";
+                        nexusArtifactUploader(
+                            nexusVersion: nexusVersion,
+                            protocol: nexusProtocol,
+                            nexusUrl: nexusUrl,
+                            groupId: pom.groupId,
+                            version: pom.version,
+                            repository: nexusAppRepo,
+                            credentialsId: nexusCredential,
+                            artifacts: [
+                                [
+                                    artifactId: pom.artifactId,
+                                    classifier: '',
+                                    file: artifactPath,
+                                    type: pom.packaging
+                                ],
+                                [
+                                    artifactId: pom.artifactId,
+                                    classifier: '',
+                                    file: "pom.xml",
+                                    type: "pom"
+                                ]
+                            ]
+                        );
+                    }else{
+                        error "*** File: ${artifactPath}, could not be found";
+                    }
+                }
+            }
+        }
+		
+		stage("Deploy"){
+            steps {
+                script {
+                    echo "Hello world!"
+                    node ("tomcat"){
+                    	sh """
+                        curl -o petclinic.war http://182.169.41.111:8081/repository/maven-repository/org/springframework/samples/petclinic/2.2.1/petclinic-2.2.1.war
+                        cp petclinic.war '/opt/apache-tomcat-9.0.37/webapps/'
+                        """
+                    }
+                }
+            }
+        }
+		
+		stage("Functional Testing"){
+            steps {
+                script {
+                    node("kat-agent"){
+                    	try{
+                        	bat '''
+                            "D:\\Katalon_Studio_Engine_Windows_64-7.6.2\\katalonc" -noSplash -runMode=console -projectPath="C:\\Users\\MII\\Katalon Studio\\test-project\\test.prj" -retry=0 \
+                            -testSuitePath="Test Suites/TS_RegressionTest" -executionProfile="default" -browserType="Chrome" \
+                            -apiKey="31ecf3c1-1132-4bad-958f-8c748974e218"
+                            '''
+                        }catch(Exception e){
+                        
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+def getFromPom(key) {
+  pom = readMavenPom file: "pom.xml"
+  return pom.'${key}'
+}

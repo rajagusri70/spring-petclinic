@@ -1,0 +1,15 @@
+1
+2
+3
+4 tanpa trigger deploy
+5 trigger deploy
+6 trigger ABC
+7 comment deployinfo
+8 comment 1 parser
+9 commnet 1 parser + trigger ABC
+10 add delay
+11 deploy to 10.243.211.39
+12 coba pull req approved
+13 coba pull req approved
+14 Demo
+15 Validation pipeline 3
